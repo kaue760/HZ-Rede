@@ -6,6 +6,7 @@ import { AI_PACKAGES } from '../constants';
 import { AIPackageId } from '../types';
 import { Button } from '../components/ui/Button';
 import { GoogleGenAI } from '@google/genai';
+import CountdownTimer from '../components/ui/CountdownTimer';
 
 // A chave da API é injetada do ambiente
 const API_KEY = process.env.API_KEY;
@@ -119,7 +120,7 @@ const AITool: React.FC<{ toolName: string }> = ({ toolName }) => {
 
 const DashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AIPackageId>(AIPackageId.Banners);
-  const { user, siteMessages } = useAuth();
+  const { user, siteMessages, expireCurrentUserTrial } = useAuth();
   const navigate = useNavigate();
 
   if (!user) {
@@ -157,28 +158,39 @@ const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-8">
-      <aside className="md:w-1/4 lg:w-1/5">
-        <nav className="flex flex-col space-y-2">
-          {AI_PACKAGES.map((pkg) => (
-            <button
-              key={pkg.id}
-              onClick={() => setActiveTab(pkg.id)}
-              className={`text-left p-3 rounded-md transition-colors text-sm font-medium ${
-                activeTab === pkg.id
-                  ? 'bg-brand-primary text-white'
-                  : 'text-gray-300 hover:bg-dark-card hover:text-white'
-              }`}
-            >
-              {pkg.name}
-            </button>
-          ))}
-        </nav>
-      </aside>
-      <main className="flex-grow md:w-3/4 lg:w-4/5 relative">
-        {renderContent()}
-      </main>
-    </div>
+    <>
+      {user && user.trial.active && user.trial.expiresAt && (
+        <div className="bg-brand-primary/80 border border-brand-secondary text-white p-3 rounded-lg mb-6 text-center flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4 shadow-lg">
+          <p className="font-semibold">Seu teste grátis termina em:</p>
+          <CountdownTimer 
+            expiryTimestamp={user.trial.expiresAt}
+            onExpire={expireCurrentUserTrial}
+          />
+        </div>
+      )}
+      <div className="flex flex-col md:flex-row gap-8">
+        <aside className="md:w-1/4 lg:w-1/5">
+          <nav className="flex flex-col space-y-2">
+            {AI_PACKAGES.map((pkg) => (
+              <button
+                key={pkg.id}
+                onClick={() => setActiveTab(pkg.id)}
+                className={`text-left p-3 rounded-md transition-colors text-sm font-medium ${
+                  activeTab === pkg.id
+                    ? 'bg-brand-primary text-white'
+                    : 'text-gray-300 hover:bg-dark-card hover:text-white'
+                }`}
+              >
+                {pkg.name}
+              </button>
+            ))}
+          </nav>
+        </aside>
+        <main className="flex-grow md:w-3/4 lg:w-4/5 relative">
+          {renderContent()}
+        </main>
+      </div>
+    </>
   );
 };
 

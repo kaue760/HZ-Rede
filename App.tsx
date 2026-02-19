@@ -7,12 +7,14 @@ import DashboardPage from './pages/DashboardPage';
 import PaymentPage from './pages/PaymentPage';
 import AdminPage from './pages/AdminPage';
 import GroupPage from './pages/GroupPage';
+import LoginPage from './pages/LoginPage';
+import ProfilePage from './pages/ProfilePage';
 import Header from './components/layout/Header';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   if (!user) {
-    return <Navigate to="/" />;
+    return <Navigate to="/login" />;
   }
   return <>{children}</>;
 };
@@ -35,8 +37,10 @@ function App() {
           <main className="flex-grow container mx-auto p-4 md:p-6">
             <Routes>
               <Route path="/" element={<HomePage />} />
+              <Route path="/login" element={<LoginPage />} />
               <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/payment/:packageId" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/group" element={<GroupPage />} />
             </Routes>

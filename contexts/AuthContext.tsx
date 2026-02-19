@@ -13,12 +13,18 @@ interface AuthContextType {
   purchasePackage: (packageId: AIPackageId, method: 'pix' | 'card') => void;
   loginAdmin: (code: string) => boolean;
   logout: () => void;
+  loginUser: (email: string) => boolean; // Simplified login
   updateUser: (updatedUser: User) => void;
   addPaymentAttempt: (attempt: Omit<PaymentAttempt, 'id' | 'date'>) => void;
   updatePackagePrice: (packageId: AIPackageId, newPrice: number) => void;
   siteMessages: { [key: string]: string };
   updateSiteMessage: (key: string, value: string) => void;
   packagePrices: { [key in AIPackageId]: number };
+  trialDurationHours: number;
+  updateTrialDuration: (hours: number) => void;
+  promotionMessage: string;
+  updatePromotionMessage: (message: string) => void;
+  expireCurrentUserTrial: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -28,6 +34,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [paymentAttempts, setPaymentAttempts] = useLocalStorage<PaymentAttempt[]>('hz_payment_attempts', []);
   const [currentUserEmail, setCurrentUserEmail] = useLocalStorage<string | null>('hz_current_user', null);
   const [isAdmin, setIsAdmin] = useLocalStorage<boolean>('hz_is_admin', false);
+  const [trialDurationHours, setTrialDurationHours] = useLocalStorage<number>('hz_trial_duration', 24);
+  const [promotionMessage, setPromotionMessage] = useLocalStorage<string>('hz_promo_message', 'Aproveite nossa promoção de lançamento!');
+  
   const [packagePrices, setPackagePrices] = useLocalStorage<{[key in AIPackageId]: number}>(
     'hz_package_prices', 
     AI_PACKAGES.reduce((acc, pkg) => ({...acc, [pkg.id]: pkg.price}), {} as {[key in AIPackageId]: number})
@@ -54,11 +63,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearInterval(interval);
   }, [checkTrialStatus]);
 
+  const loginUser = (email: string): boolean => {
+      const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (existingUser) {
+          setCurrentUserEmail(existingUser.email);
+          return true;
+      }
+      return false;
+  }
+  
+  const expireCurrentUserTrial = () => {
+    if (user && user.trial.active) {
+        console.log("Expirando teste para: ", user.email);
+        const updatedUser = { ...user, trial: { ...user.trial, active: false } };
+        setUsers(prevUsers => prevUsers.map(u => u.email === user.email ? updatedUser : u));
+    }
+  };
+
+
   const startTrial = async (email: string, name?: string): Promise<boolean> => {
-    const existingUser = users.find(u => u.email === email);
+    const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (existingUser && existingUser.trial.used) {
       alert(siteMessages.trialUsed);
-      return false;
+      // Log them in anyway
+      setCurrentUserEmail(existingUser.email);
+      return false; // Indicate trial was not started, but login happened
     }
 
     const now = Date.now();
@@ -69,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       trial: {
         active: true,
         activatedAt: now,
-        expiresAt: now + 24 * 60 * 60 * 1000, // 24 hours
+        expiresAt: now + trialDurationHours * 60 * 60 * 1000,
         used: true,
       },
       purchasedPackages: [],
@@ -143,8 +172,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSiteMessages(prev => ({...prev, [key]: value}));
   };
 
+  const updateTrialDuration = (hours: number) => {
+    setTrialDurationHours(hours);
+  };
+  
+  const updatePromotionMessage = (message: string) => {
+      setPromotionMessage(message);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAdmin, users, paymentAttempts, startTrial, purchasePackage, loginAdmin, logout, updateUser, addPaymentAttempt, siteMessages, updateSiteMessage, packagePrices, updatePackagePrice }}>
+    <AuthContext.Provider value={{ user, isAdmin, users, paymentAttempts, startTrial, purchasePackage, loginAdmin, logout, loginUser, updateUser, addPaymentAttempt, siteMessages, updateSiteMessage, packagePrices, updatePackagePrice, trialDurationHours, updateTrialDuration, promotionMessage, updatePromotionMessage, expireCurrentUserTrial }}>
       {children}
     </AuthContext.Provider>
   );
