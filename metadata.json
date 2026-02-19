@@ -1,0 +1,5 @@
+{
+  "name": "HZ Rede",
+  "description": "Uma aplicação web completa para criar artes, banners, logotipos e mais usando o poder da inteligência artificial do Gemini. Inclui um sistema de teste gratuito, pacotes de pagamento e um painel administrativo.",
+  "requestFramePermissions": []
+}
