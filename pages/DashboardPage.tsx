@@ -35,9 +35,7 @@ const AITool: React.FC<{ toolName: string }> = ({ toolName }) => {
             
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash-image',
-                contents: {
-                    parts: [{ text: prompt }],
-                },
+                contents: prompt,
             });
 
             let imageFound = false;
